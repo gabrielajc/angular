@@ -1,0 +1,131 @@
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+
+import {Component, Directive, NgModule, Pipe, PipeTransform} from '@angular/core';
+import {TestBed} from '@angular/core/testing';
+
+describe('standalone components, directives and pipes', () => {
+  it('should render a standalone component', () => {
+    @Component({
+      standalone: true,
+      template: 'Look at me, no NgModule!',
+    })
+    class StandaloneCmp {
+    }
+
+    const fixture = TestBed.createComponent(StandaloneCmp);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.innerHTML).toEqual('Look at me, no NgModule!');
+  });
+
+  it('should render a standalone component with a standalone dependency', () => {
+    @Component({
+      standalone: true,
+      selector: 'inner-cmp',
+      template: 'Look at me, no NgModule!',
+    })
+    class InnerCmp {
+    }
+
+    @Component({
+      standalone: true,
+      template: '<inner-cmp></inner-cmp>',
+      imports: [InnerCmp],
+    })
+    class StandaloneCmp {
+    }
+
+    const fixture = TestBed.createComponent(StandaloneCmp);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.innerHTML)
+        .toEqual('<inner-cmp>Look at me, no NgModule!</inner-cmp>');
+  });
+
+
+  it('should render a standalone component with an NgModule-based dependency', () => {
+    @Component({
+      selector: 'inner-cmp',
+      template: 'Look at me, no NgModule (kinda)!',
+    })
+    class InnerCmp {
+    }
+
+    @NgModule({
+      declarations: [InnerCmp],
+      exports: [InnerCmp],
+    })
+    class Module {
+    }
+
+    @Component({
+      standalone: true,
+      template: '<inner-cmp></inner-cmp>',
+      imports: [Module],
+    })
+    class StandaloneCmp {
+    }
+
+    const fixture = TestBed.createComponent(StandaloneCmp);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.innerHTML)
+        .toEqual('<inner-cmp>Look at me, no NgModule (kinda)!</inner-cmp>');
+  });
+
+  it('should allow exporting standalone components, directives and pipes from NgModule', () => {
+    @Component({
+      selector: 'standalone-cmp',
+      standalone: true,
+      template: `standalone`,
+    })
+    class StandaloneCmp {
+    }
+
+    @Directive({
+      selector: '[standalone-dir]',
+      host: {
+        '[attr.id]': '"standalone"',
+      },
+      standalone: true
+    })
+    class StandaloneDir {
+    }
+
+    @Pipe({name: 'standalonePipe', standalone: true})
+    class StandalonePipe implements PipeTransform {
+      transform(value: any) {
+        return `|${value}`;
+      }
+    }
+
+    @NgModule({
+      imports: [StandaloneCmp, StandaloneDir, StandalonePipe],
+      exports: [StandaloneCmp, StandaloneDir, StandalonePipe],
+    })
+    class LibModule {
+    }
+
+    @Component({
+      selector: 'app-cmpt',
+      template: `<standalone-cmp standalone-dir></standalone-cmp>{{'standalone' | standalonePipe}}`,
+    })
+    class AppComponent {
+    }
+
+    TestBed.configureTestingModule({
+      imports: [LibModule],
+      declarations: [AppComponent],
+    });
+
+    const fixture = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toBe('standalone|standalone');
+    expect(fixture.nativeElement.querySelector('standalone-cmp').getAttribute('id'))
+        .toBe('standalone');
+  });
+});
